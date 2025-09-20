@@ -1,9 +1,11 @@
 # backend/database.py
 
 import os
-
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+
+load_dotenv()
 
 DATABASE_CONNECTION_STRING = os.getenv("DATABASE_CONNECTION_STRING")
 
