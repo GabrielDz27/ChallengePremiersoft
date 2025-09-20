@@ -9,3 +9,9 @@ engine = create_engine("mysql+pymysql://root:123456@localhost:3306/data_saude", 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

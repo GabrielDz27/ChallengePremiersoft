@@ -1,9 +1,14 @@
+from sys import prefix
 from fastapi import FastAPI
-from routers import pacientes  # importa o módulo pacientes.py
+from routers import medicos
 
 app = FastAPI()
 
-app.include_router(pacientes.router)
+prefix="/api/v1"
+
+#app.include_router(pacientes.router)
+app.include_router(medicos.router, prefix=prefix)
+
 # Inclua outros routers conforme necessário
 
 if __name__ == "__main__":
