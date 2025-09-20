@@ -1,9 +1,8 @@
 import streamlit as st
 import requests
 import pandas as pd
-import os
 
-# BASE_URL = "http://localhost:8000"
+BASE_URL = "http://0.0.0.0:8000"
 
 st.title("APS")
 
@@ -28,24 +27,15 @@ for nome, aba in zip(endpoints.keys(), abas):
     with aba:
         st.write(f"📌 Dados de **{nome}**")
     
-    # trocar para o fetch que esta em baixo
-        caminho = os.path.join('data', endpoints[nome] + '.csv')
+        try:
+            response = requests.get(f"{BASE_URL}/{endpoints[nome]}")
+            response.raise_for_status()
+            data = response.json()
+            if isinstance(data, list) and len(data) > 0:
+                df = pd.DataFrame(data)
+                st.dataframe(df, use_container_width=True)
+            else:
+                st.info("Nenhum dado encontrado.")
 
-        if os.path.exists(caminho):
-            df = pd.read_csv(caminho)
-            st.dataframe(df, use_container_width=True)
-        else:
-            st.warning(f"O arquivo `{endpoints[nome]}`.csv não foi encontrado em data.")
-
-        # try:
-        #     # response = requests.get(f"{BASE_URL}/{endpoints[nome]}")
-        #     # response.raise_for_status()
-        #     # data = response.json()
-        #     # if isinstance(data, list) and len(data) > 0:
-        #         # df = pd.DataFrame(data)
-        #         # st.dataframe(df, use_container_width=True)
-        #     # else:
-        #     #     st.info("Nenhum dado encontrado.")
-
-        # except requests.exceptions.RequestException as e:
-        #     st.error(f"Erro ao conectar no backend: {e}")
+        except requests.exceptions.RequestException as e:
+            st.error(f"Erro ao conectar no backend: {e}")
