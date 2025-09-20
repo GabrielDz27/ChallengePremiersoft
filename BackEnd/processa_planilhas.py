@@ -1,5 +1,6 @@
 import uuid
 import pandas as pd
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models import Cid10, Base, Especialidade, Estado, Hospital, Municipio, Medico, Paciente # importe seu model Cid10 aqui

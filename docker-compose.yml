@@ -36,6 +36,12 @@ services:
       - "3306:3306"  # Exposing MySQL port
     volumes:
       - db-data:/var/lib/mysql  # Persistent volume for MySQL data
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 # Volumes to persist data
 volumes:

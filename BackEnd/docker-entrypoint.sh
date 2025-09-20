@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+set -euo pipefail
 
 echo "Running database initialization scripts..."
 python ./init_db.py
