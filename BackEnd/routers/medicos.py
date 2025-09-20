@@ -1,6 +1,7 @@
 # routers/medicos.py
 
-from fastapi import APIRouter, HTTPException, Depends
+from typing import Optional
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from uuid import uuid4
 
@@ -19,14 +20,18 @@ def criar_medico(medico: medico_schemas.MedicoCreate, db: Session = Depends(get_
         especialidade_id=medico.especialidade_id,
         municipio_id=medico.municipio_id
     )
+    
     db.add(novo_medico)
     db.commit()
     db.refresh(novo_medico)
     return novo_medico
 
 @router.get("/", response_model=list[MedicoResponse])
-def listar_medicos(db: Session = Depends(get_db)):
-    return db.query(Medico).all()
+def listar_medicos(db: Session = Depends(get_db), limit: Optional[int] = Query(None, gt=0)):
+    query = db.query(Medico)
+    if limit:
+        query = query.limit(limit)
+    return query.all()
 
 @router.get("/{codigo}", response_model=MedicoResponse)
 def obter_medico(codigo: str, db: Session = Depends(get_db)):
@@ -34,3 +39,4 @@ def obter_medico(codigo: str, db: Session = Depends(get_db)):
     if not medico:
         raise HTTPException(status_code=404, detail="Médico não encontrado")
     return medico
+
