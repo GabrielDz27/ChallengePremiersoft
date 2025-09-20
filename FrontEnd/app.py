@@ -3,10 +3,10 @@ from paginas import tabelas, upload
 
 st.title("APS - Agência Premiersoft de Saúde")
 
-abas = st.tabs(["📊 Tabelas", "📁 Upload de Arquivos"])
+abas = st.tabs([ "📁 Upload de Arquivos", "📊 Tabelas", " Dashboard"])
 
 with abas[0]:
-    tabelas.show()
+    upload.show()
 
 with abas[1]:
-    upload.show()
+    tabelas.show()
