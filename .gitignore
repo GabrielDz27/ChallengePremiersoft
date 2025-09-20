@@ -177,3 +177,5 @@ pyrightconfig.json
 
 pacientes.xml
 BackEnd/sheet/pacientes.xml
+
+*.pyc
