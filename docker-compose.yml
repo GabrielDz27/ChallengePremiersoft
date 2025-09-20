@@ -1,2 +1,45 @@
-services:
+version: '3.8'
 
+services:
+  # Backend service
+  backend:
+    image: premier-backend:latest  # Replace with the image for your Python 3.13 app
+    build:
+      context: ./Backend  # Assuming the backend Dockerfile is inside the 'backend' folder
+    container_name: backend
+    ports:
+      - "8000:8000"  # Exposing port 8000 on the host to 8000 inside the container
+    environment:
+      - DATABASE_CONNECTION_STRING=mysql://root:123456@mysql:3306/data_saude  # Database connection string
+    depends_on:
+      - mysql  # Ensure MySQL service is ready before starting the backend
+
+  # Frontend service
+  frontend:
+    image: premier-frontend:latest  # Replace with your frontend image (e.g., React, Next.js, etc.)
+    build:
+      context: ./FrontEnd  # Assuming the frontend Dockerfile is inside the 'frontend' folder
+    container_name: frontend
+    ports:
+      - "8501:8501"  # Exposing port 8501 on the host to 8501 inside the container
+    environment:
+      - BACKEND_URL=http://backend:8000  # Set backend URL for frontend to connect
+    depends_on:
+      - backend  # Ensure the backend service is running before starting the frontend
+
+  # MySQL service
+  mysql:
+    image: mysql:8.0.31  # Using MySQL 8.0, you can choose a version if needed
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456 # Root password for MySQL
+      MYSQL_DATABASE: data_saude  # Database name to create at startup
+    ports:
+      - "3306:3306"  # Exposing MySQL port
+    volumes:
+      - db-data:/var/lib/mysql  # Persistent volume for MySQL data
+
+# Volumes to persist data
+volumes:
+  db-data:
+    driver: local  # Use local driver for volume persistence
