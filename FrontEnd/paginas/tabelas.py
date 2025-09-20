@@ -1,9 +1,10 @@
 
 import streamlit as st
+import os
 import requests
 import pandas as pd
 
-BASE_URL = "http://127.0.0.1:8000/api/v1"
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000/api/v1")
 
 st.title("APS")
 
@@ -29,7 +30,7 @@ for nome, aba in zip(endpoints.keys(), abas):
         st.write(f" Dados de **{nome}**")
     
         try:
-            response = requests.get(f"{BASE_URL}/{endpoints[nome]}")
+            response = requests.get(f"{BACKEND_URL}/{endpoints[nome]}")
             response.raise_for_status()
             data = response.json()
             if isinstance(data, list) and len(data) > 0:

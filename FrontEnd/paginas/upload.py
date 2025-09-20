@@ -1,8 +1,9 @@
 import streamlit as st
 import requests
+import os
 import pandas as pd
 
-BASE_URL = "http://127.0.0.1:8000/api/v1"
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000/api/v1")
 
 st.title("Upload de Arquivos para o Backend")
 
@@ -25,7 +26,7 @@ if arquivo:
         try:
             # Converter DataFrame em lista de dicionários
             dados = df.to_dict(orient="records")
-            response = requests.post(f"{BASE_URL}/{tipo.lower()}", json=dados)
+            response = requests.post(f"{BACKEND_URL}/{tipo.lower()}", json=dados)
             response.raise_for_status()
             st.success(f"Arquivo enviado com sucesso! Status: {response.status_code}")
         except requests.exceptions.RequestException as e:

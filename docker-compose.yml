@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Backend service
   backend:
@@ -23,7 +21,7 @@ services:
     ports:
       - "8501:8501"  # Exposing port 8501 on the host to 8501 inside the container
     environment:
-      - BACKEND_URL=http://backend:8000  # Set backend URL for frontend to connect
+      - BACKEND_URL=backend/api/v1  # Set backend URL for frontend to connect
     depends_on:
       - backend  # Ensure the backend service is running before starting the frontend
 
