@@ -2,8 +2,23 @@ import uuid
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Cid10, Base, Especialidade, Estado, Hospital, Municipio, Medico, Paciente # importe seu model Cid10 aqui
+from models import Cid10, Base, Especialidade, Estado, Hospital, Municipio, Medico, Paciente 
 import xml.etree.ElementTree as ET
+import os
+
+
+def check_file_type(file_path, skiprows=0, header=0, names=None):
+   ft = os.path.splitext(file_path)[1].lower()
+   if ft in ['.xlsx', '.xls']:
+       return pd.read_excel(file_path, skiprows=skiprows, header=header, names=names)
+   elif ft == '.csv':
+       return pd.read_csv(file_path, skiprows=skiprows, header=header, names=names)
+   elif ft == '.xml':
+       return ET.parse(file_path)
+   elif ft == '.json':
+       return pd.read_json(file_path)
+   elif ft == '.parquet':   
+       return pd.read_parquet(file_path)
 
 
 # Configurar conexão com MySQL (ajuste a senha e banco)
@@ -81,7 +96,7 @@ def read_municipios(file_path):
     print("Municípios importados com sucesso")
 
 def read_hospitais(file_path):
-    df = pd.read_csv(file_path)
+    df = check_file_type(file_path)
     with Session() as session:
         for _, row in df.iterrows():
             # Pega o municipio pelo código_ibge da cidade
@@ -119,7 +134,7 @@ def read_hospitais(file_path):
     print("Hospitais importados com sucesso!")
 
 def read_especialidades(file_path):
-    df = pd.read_csv(file_path)
+    df = check_file_type(file_path)
     especialidades_set = set()
 
     # Extrai todas as especialidades do CSV
@@ -139,7 +154,7 @@ def read_especialidades(file_path):
 
 
 def read_medicos(file_path):
-    df = pd.read_csv(file_path)
+    df = check_file_type(file_path)
 
     medicos = []
 
@@ -240,11 +255,11 @@ def processa_pacientes_arquivo(file_path, session):
 
 
 if __name__ == "__main__":
-    read_cid10_file('sheet/tabela CID-10.xlsx')
-    read_estados('sheet/estados.csv')
-    read_municipios('sheet/municipios.csv')
-    read_especialidades('sheet/hospitais.csv')
-    read_hospitais('sheet/hospitais.csv')
-    read_medicos('sheet/medicos.csv')
-    # processa_pacientes_arquivo('Sheet/pacientes.xml', session)
+    # read_cid10_file('sheet/tabela CID-10.xlsx')
+    # read_estados('sheet/estados.csv')
+    # read_municipios('sheet/municipios.csv')
+    # read_especialidades('sheet/hospitais.csv')
+    # read_hospitais('sheet/hospitais.csv')
+    # read_medicos('sheet/medicos.csv')
+    processa_pacientes_arquivo('Sheet/pacientes.xml', session)
     session.close()
