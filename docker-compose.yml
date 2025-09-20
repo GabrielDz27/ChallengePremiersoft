@@ -10,7 +10,7 @@ services:
     ports:
       - "8000:8000"  # Exposing port 8000 on the host to 8000 inside the container
     environment:
-      - DATABASE_CONNECTION_STRING=mysql://root:123456@mysql:3306/data_saude  # Database connection string
+      - DATABASE_CONNECTION_STRING=mysql+pymysql://root:123456@mysql:3306/data_saude  # Database connection string
     depends_on:
       - mysql  # Ensure MySQL service is ready before starting the backend
 
