@@ -1,5 +1,6 @@
 import uuid
 import pandas as pd
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models import Cid10, Base, Especialidade, Estado, Hospital, Municipio, Medico, Paciente 
@@ -20,9 +21,9 @@ def check_file_type(file_path, skiprows=0, header=0, names=None):
    elif ft == '.parquet':   
        return pd.read_parquet(file_path)
 
+DATABASE_CONNECTION_STRING = os.getenv("DATABASE_CONNECTION_STRING")
 
-# Configurar conexão com MySQL (ajuste a senha e banco)
-engine = create_engine('mysql+pymysql://root:123456@localhost:3306/data_saude')
+engine = create_engine(DATABASE_CONNECTION_STRING)
 Session = sessionmaker(bind=engine)
 session = Session()
 
@@ -251,7 +252,6 @@ def processa_pacientes_arquivo(file_path, session):
     if pacientes_batch:
         session.bulk_save_objects(pacientes_batch)
         session.commit()
-
 
 
 if __name__ == "__main__":
