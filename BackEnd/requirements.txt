@@ -16,3 +16,4 @@ typing_extensions==4.15.0
 uvicorn==0.36.0
 cryptography
 pandas
+openpyxl

@@ -1,33 +1,6 @@
 services:
-  # Backend service
-  backend:
-    image: premier-backend:latest  # Replace with the image for your Python 3.13 app
-    build:
-      context: ./Backend  # Assuming the backend Dockerfile is inside the 'backend' folder
-    container_name: backend
-    ports:
-      - "8000:8000"  # Exposing port 8000 on the host to 8000 inside the container
-    environment:
-      - DATABASE_CONNECTION_STRING=mysql+pymysql://root:123456@mysql:3306/data_saude  # Database connection string
-    depends_on:
-      - mysql  # Ensure MySQL service is ready before starting the backend
-
-  # Frontend service
-  frontend:
-    image: premier-frontend:latest  # Replace with your frontend image (e.g., React, Next.js, etc.)
-    build:
-      context: ./FrontEnd  # Assuming the frontend Dockerfile is inside the 'frontend' folder
-    container_name: frontend
-    ports:
-      - "8501:8501"  # Exposing port 8501 on the host to 8501 inside the container
-    environment:
-      - BACKEND_URL=http://backend:8000/api/v1  # Set backend URL for frontend to connect
-    depends_on:
-      - backend  # Ensure the backend service is running before starting the frontend
-
-  # MySQL service
-  mysql:
-    image: mysql:8.0.31  # Using MySQL 8.0, you can choose a version if needed
+  mysql: # Configuração padrão de MySQL
+    image: mysql:8.0.31
     container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: 123456 # Root password for MySQL
@@ -42,6 +15,32 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  backend:
+    image: premier-backend:latest  # Replace with the image for your Python 3.13 app
+    build:
+      context: ./Backend  # Assuming the backend Dockerfile is inside the 'backend' folder
+    container_name: backend
+    ports:
+      - "8000:8000"  # Exposing port 8000 on the host to 8000 inside the container
+    environment:
+      - DATABASE_CONNECTION_STRING=mysql+pymysql://root:123456@mysql:3306/data_saude  # Database connection string
+    depends_on:
+      mysql:
+        condition: service_healthy  # Ensure MySQL is healthy before starting the backend
+
+  frontend:
+    image: premier-frontend:latest  # Replace with your frontend image (e.g., React, Next.js, etc.)
+    build:
+      context: ./FrontEnd  # Assuming the frontend Dockerfile is inside the 'frontend' folder
+    container_name: frontend
+    ports:
+      - "8501:8501"  # Exposing port 8501 on the host to 8501 inside the container
+    environment:
+      - BACKEND_URL=http://backend:8000/api/v1  # Set backend URL for frontend to connect
+    depends_on:
+      - backend  # Ensure the backend service is running before starting the frontend
+
 
 # Volumes to persist data
 volumes:
