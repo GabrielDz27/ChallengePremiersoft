@@ -1,18 +1,11 @@
-import streamlit as st
 import os
+import streamlit as st
 import requests
-import pandas as pd
-import plotly.express as px
+from streamlit_echarts import st_echarts
 
-# URL do backend configurável via variável de ambiente
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000/api/v1")
 
 def show():
-    st.title("📊 Dashboard APS - Agência Premiersoft de Saúde")
-
-    # -------------------
-    # Parte 1: Buscar dados do backend
-    # -------------------
     endpoints = {
         "Pacientes": "pacientes",
         "Hospitais": "hospitais",
@@ -20,71 +13,155 @@ def show():
         "Especialidades": "especialidades",
         "Hospitais-Especialidades": "hospitais_especialidades",
         "Médicos-Hospitais": "medicos_hospitais",
+        "Pacientes-Hospitais": "pacientes_hospitais",
+        "CID-10": "cid10",
+        "Estados": "estados",
+        "Municípios": "municipios"
     }
 
-    dfs = {}
-    for nome, endpoint in endpoints.items():
-        try:
-            response = requests.get(f"{BACKEND_URL}/{endpoint}")
-            response.raise_for_status()
-            data = response.json()
-            if isinstance(data, list) and len(data) > 0:
-                dfs[nome] = pd.DataFrame(data)
-            else:
-                dfs[nome] = pd.DataFrame()  # dataframe vazio
-        except requests.exceptions.RequestException as e:
-            st.error(f"Erro ao conectar no backend ({nome}): {e}")
-            dfs[nome] = pd.DataFrame()
+    # Sidebar com abas
+    abas = [
+        "Métricas Gerais",
+        "Pacientes por Hospital",
+        "Médicos por Especialidade",
+        "Pacientes por Estado/Município",
+        "Hospitais por Município/Estado",
+        "Ocupação Hospitalar"
+    ]
+    aba_selecionada = st.sidebar.radio("Selecione a aba:", abas)
 
-    # -------------------
-    # Parte 2: Métricas gerais
-    # -------------------
-    st.subheader("📌 Métricas Gerais")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Pacientes", len(dfs.get("Pacientes", [])))
-    col2.metric("Hospitais", len(dfs.get("Hospitais", [])))
-    col3.metric("Médicos", len(dfs.get("Médicos", [])))
+    # ---------------------------
+    # Métricas Gerais
+    # ---------------------------
+    if aba_selecionada == "Métricas Gerais":
+        st.title("📊 Métricas Gerais")
+        col1, col2, col3 = st.columns(3)
+        
+        pacientes = requests.get(f"{BACKEND_URL}/{endpoints['Pacientes']}").json()
+        hospitais = requests.get(f"{BACKEND_URL}/{endpoints['Hospitais']}").json()
+        medicos = requests.get(f"{BACKEND_URL}/{endpoints['Médicos']}").json()
+        especialidades = requests.get(f"{BACKEND_URL}/{endpoints['Especialidades']}").json()
+        municipios = requests.get(f"{BACKEND_URL}/{endpoints['Municípios']}").json()
+        
+        col1.metric("Total de Pacientes", len(pacientes))
+        col2.metric("Total de Hospitais", len(hospitais))
+        col3.metric("Total de Médicos", len(medicos))
+        st.metric("Total de Especialidades", len(especialidades))
+        st.metric("Total de Municípios", len(municipios))
 
-    # -------------------
-    # Parte 3: Gráficos interativos
-    # -------------------
-    st.subheader("📈 Distribuição de Pacientes por Hospital")
-    if not dfs.get("Pacientes", pd.DataFrame()).empty and \
-       not dfs.get("Pacientes-Hospitais", pd.DataFrame()).empty and \
-       not dfs.get("Hospitais", pd.DataFrame()).empty:
+    # ---------------------------
+    # Pacientes por Hospital
+    # ---------------------------
+    elif aba_selecionada == "Pacientes por Hospital":
+        st.title("Pacientes por Hospital")
+        ph = requests.get(f"{BACKEND_URL}/{endpoints['Pacientes-Hospitais']}").json()
+        hosp = requests.get(f"{BACKEND_URL}/{endpoints['Hospitais']}").json()
+        
+        # Contagem de pacientes por hospital
+        hospital_names = [h['nome'] for h in hosp]
+        contagem = {h['codigo']: 0 for h in hosp}
+        for registro in ph:
+            contagem[registro['hospital_codigo']] += 1
+        values = [contagem[h['codigo']] for h in hosp]
+        
+        option = {
+            "xAxis": {"type": "category", "data": hospital_names},
+            "yAxis": {"type": "value"},
+            "series": [{"data": values, "type": "bar"}]
+        }
+        st_echarts(options=option, height="500px")
 
-        # Unir dados de pacientes com hospitais
-        pacientes_hosp = pd.merge(
-            dfs["Pacientes-Hospitais"], 
-            dfs["Hospitais"], 
-            left_on="hospital_id", 
-            right_on="id", 
-            how="left"
-        )
+    # ---------------------------
+    # Médicos por Especialidade
+    # ---------------------------
+    elif aba_selecionada == "Médicos por Especialidade":
+        st.title("Médicos por Especialidade")
+        med = requests.get(f"{BACKEND_URL}/{endpoints['Médicos']}").json()
+        esp = requests.get(f"{BACKEND_URL}/{endpoints['Especialidades']}").json()
+        
+        # Contagem de médicos por especialidade
+        contagem = {e['id']: 0 for e in esp}
+        for m in med:
+            contagem[m['especialidade_id']] += 1
+        labels = [e['nome'] for e in esp]
+        values = [contagem[e['id']] for e in esp]
+        
+        option = {
+            "series": [{
+                "type": "pie",
+                "data": [{"value": v, "name": l} for v, l in zip(values, labels)]
+            }]
+        }
+        st_echarts(options=option, height="500px")
 
-        grafico = pacientes_hosp.groupby("nome")["paciente_id"].count().reset_index()
-        grafico = grafico.rename(columns={"paciente_id": "Quantidade de Pacientes"})
-        fig = px.bar(grafico, x="nome", y="Quantidade de Pacientes", title="Pacientes por Hospital")
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("Dados de pacientes ou hospitais não disponíveis para o gráfico.")
+    # ---------------------------
+    # Pacientes por Estado/Município
+    # ---------------------------
+    elif aba_selecionada == "Pacientes por Estado/Município":
+        st.title("Pacientes por Estado/Município")
+        pacientes = requests.get(f"{BACKEND_URL}/{endpoints['Pacientes']}").json()
+        municipios = requests.get(f"{BACKEND_URL}/{endpoints['Municípios']}").json()
+        estados = requests.get(f"{BACKEND_URL}/{endpoints['Estados']}").json()
+        
+        # Exemplo simples: contagem de pacientes por estado
+        estado_map = {e['codigo_uf']: e['uf'] for e in estados}
+        municipio_map = {m['codigo_ibge']: m['codigo_uf'] for m in municipios}
+        
+        contagem_estados = {}
+        for p in pacientes:
+            uf = estado_map.get(municipio_map.get(p['municipio_id']))
+            if uf:
+                contagem_estados[uf] = contagem_estados.get(uf, 0) + 1
+        
+        option = {
+            "xAxis": {"type": "category", "data": list(contagem_estados.keys())},
+            "yAxis": {"type": "value"},
+            "series": [{"data": list(contagem_estados.values()), "type": "bar"}]
+        }
+        st_echarts(options=option, height="500px")
 
-    st.subheader("📈 Médicos por Especialidade")
-    if not dfs.get("Médicos", pd.DataFrame()).empty and \
-       not dfs.get("Especialidades", pd.DataFrame()).empty:
+    # ---------------------------
+    # Hospitais por Município/Estado
+    # ---------------------------
+    elif aba_selecionada == "Hospitais por Município/Estado":
+        st.title("Hospitais por Município/Estado")
+        hosp = requests.get(f"{BACKEND_URL}/{endpoints['Hospitais']}").json()
+        municipios = requests.get(f"{BACKEND_URL}/{endpoints['Municípios']}").json()
+        estados = requests.get(f"{BACKEND_URL}/{endpoints['Estados']}").json()
+        
+        municipio_map = {m['codigo_ibge']: m['codigo_uf'] for m in municipios}
+        estado_map = {e['codigo_uf']: e['uf'] for e in estados}
+        
+        contagem_estados = {}
+        for h in hosp:
+            uf = estado_map.get(municipio_map.get(h['municipio_id']))
+            if uf:
+                contagem_estados[uf] = contagem_estados.get(uf, 0) + 1
+        
+        option = {
+            "xAxis": {"type": "category", "data": list(contagem_estados.keys())},
+            "yAxis": {"type": "value"},
+            "series": [{"data": list(contagem_estados.values()), "type": "bar"}]
+        }
+        st_echarts(options=option, height="500px")
 
-        # Juntar médicos com suas especialidades
-        med_esp = pd.merge(
-            dfs["Médicos"], 
-            dfs["Especialidades"], 
-            left_on="especialidade_id", 
-            right_on="id", 
-            how="left"
-        )
-
-        grafico2 = med_esp.groupby("nome_y")["id_x"].count().reset_index()
-        grafico2 = grafico2.rename(columns={"id_x": "Quantidade de Médicos", "nome_y": "Especialidade"})
-        fig2 = px.pie(grafico2, names="Especialidad", values="Quantidade de Médicos", title="Médicos por Especialidade")
-        st.plotly_chart(fig2, use_container_width=True)
-    else:
-        st.info("Dados de médicos ou especialidades não disponíveis para o gráfico.")
+    # ---------------------------
+    # Ocupação Hospitalar
+    # ---------------------------
+    elif aba_selecionada == "Ocupação Hospitalar":
+        st.title("Ocupação Hospitalar")
+        hosp = requests.get(f"{BACKEND_URL}/{endpoints['Hospitais']}").json()
+        ph = requests.get(f"{BACKEND_URL}/{endpoints['Pacientes-Hospitais']}").json()
+        
+        ocupacao = {}
+        for h in hosp:
+            count = sum(1 for p in ph if p['hospital_codigo'] == h['codigo'])
+            taxa = (count / h['leitos_totais']) * 100 if h['leitos_totais'] > 0 else 0
+            ocupacao[h['nome']] = round(taxa, 2)
+        
+        option = {
+            "xAxis": {"type": "category", "data": list(ocupacao.keys())},
+            "yAxis": {"type": "value"},
+            "series": [{"data": list(ocupacao.values()), "type": "bar"}]
+        }
+        st_echarts(options=option, height="500px")
