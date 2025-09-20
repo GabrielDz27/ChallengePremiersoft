@@ -240,11 +240,11 @@ def processa_pacientes_arquivo(file_path, session):
 
 
 if __name__ == "__main__":
-    #read_cid10_file('sheets/CID10.xlsx')
-    #read_estados('sheet/estados.csv')
-    #read_municipios('sheet/municipios.csv')
-    # read_especialidades('sheet/hospitais.csv')
-    # read_hospitais('sheet/hospitais.csv')
-    # read_medicos('sheet/medicos.csv')
-    processa_pacientes_arquivo('Sheet/pacientes.xml', session)
+    read_cid10_file('sheet/tabela CID-10.xlsx')
+    read_estados('sheet/estados.csv')
+    read_municipios('sheet/municipios.csv')
+    read_especialidades('sheet/hospitais.csv')
+    read_hospitais('sheet/hospitais.csv')
+    read_medicos('sheet/medicos.csv')
+    # processa_pacientes_arquivo('Sheet/pacientes.xml', session)
     session.close()
