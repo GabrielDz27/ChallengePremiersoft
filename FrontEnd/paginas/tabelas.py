@@ -36,7 +36,6 @@ def show():
                 else:
                     st.info("Nenhum dado encontrado.")
 
-<<<<<<< HEAD
 abas = st.tabs(list(endpoints.keys()))
 
 for nome, aba in zip(endpoints.keys(), abas):
@@ -55,7 +54,3 @@ for nome, aba in zip(endpoints.keys(), abas):
 
         except requests.exceptions.RequestException as e:
             st.error(f"Erro ao conectar no backend: {e}")
-=======
-            except requests.exceptions.RequestException as e:
-                st.error(f"Erro ao conectar no backend: {e}")
->>>>>>> 3cea8a3d4de81a64db71b4ff0b0c2d47cec90543
