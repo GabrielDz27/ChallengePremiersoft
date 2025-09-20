@@ -1,4 +1,3 @@
-
 import streamlit as st
 import os
 import requests
@@ -20,37 +19,23 @@ def show():
         "Municípios": "municipios",
     }
 
+    # Cria abas apenas uma vez
     abas = st.tabs(list(endpoints.keys()))
 
+    # Loop pelos endpoints e abas
     for nome, aba in zip(endpoints.keys(), abas):
         with aba:
-            st.write(f" Dados de **{nome}**")
-        
+            st.write(f"📌 Dados de **{nome}**")
             try:
-                response = requests.get(f"{BASE_URL}/{endpoints[nome]}")
+                response = requests.get(f"{BACKEND_URL}/{endpoints[nome]}")
                 response.raise_for_status()
                 data = response.json()
+
                 if isinstance(data, list) and len(data) > 0:
                     df = pd.DataFrame(data)
                     st.dataframe(df, use_container_width=True)
                 else:
                     st.info("Nenhum dado encontrado.")
 
-abas = st.tabs(list(endpoints.keys()))
-
-for nome, aba in zip(endpoints.keys(), abas):
-    with aba:
-        st.write(f" Dados de **{nome}**")
-    
-        try:
-            response = requests.get(f"{BACKEND_URL}/{endpoints[nome]}")
-            response.raise_for_status()
-            data = response.json()
-            if isinstance(data, list) and len(data) > 0:
-                df = pd.DataFrame(data)
-                st.dataframe(df, use_container_width=True)
-            else:
-                st.info("Nenhum dado encontrado.")
-
-        except requests.exceptions.RequestException as e:
-            st.error(f"Erro ao conectar no backend: {e}")
+            except requests.exceptions.RequestException as e:
+                st.error(f"Erro ao conectar no backend: {e}")
