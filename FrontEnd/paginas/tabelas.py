@@ -26,7 +26,7 @@ abas = st.tabs(list(endpoints.keys()))
 
 for nome, aba in zip(endpoints.keys(), abas):
     with aba:
-        st.write(f"📌 Dados de **{nome}**")
+        st.write(f" Dados de **{nome}**")
     
         try:
             response = requests.get(f"{BASE_URL}/{endpoints[nome]}")
