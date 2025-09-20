@@ -5,9 +5,9 @@ from sqlalchemy.orm import sessionmaker
 from models import Cid10, Base, Especialidade, Estado, Hospital, Municipio, Medico, Paciente # importe seu model Cid10 aqui
 import xml.etree.ElementTree as ET
 
+DATABASE_CONNECTION_STRING = os.getenv("DATABASE_CONNECTION_STRING")
 
-# Configurar conexão com MySQL (ajuste a senha e banco)
-engine = create_engine('mysql+pymysql://root:123456@localhost:3306/data_saude')
+engine = create_engine(DATABASE_CONNECTION_STRING)
 Session = sessionmaker(bind=engine)
 session = Session()
 
