@@ -1,7 +1,9 @@
 import os
 import streamlit as st
 import requests
+import json #pra fazer o trace
 from streamlit_echarts import st_echarts
+
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000/api/v1")
 
@@ -26,6 +28,7 @@ def show():
     # Lista de abas
     abas = [
         "Métricas Gerais",
+        "Médicos por local",
         "Pacientes por Hospital",
         "Médicos por Especialidade",
         "Pacientes por Estado/Município",
@@ -49,11 +52,12 @@ def show():
     # Métricas Gerais
     # ---------------------------
     if aba_selecionada == "Métricas Gerais":
-        st.header(" Métricas Gerais")
+        st.header("Métricas Gerais")
 
-        def extrair_count(valor):
+        # Função segura para extrair total do JSON
+        def extrair_total(valor, chave="total_medicos"):
             if isinstance(valor, dict):
-                return valor.get("count", 0)
+                return valor.get(chave, 0)
             elif isinstance(valor, int) or isinstance(valor, float):
                 return valor
             else:
@@ -71,16 +75,84 @@ def show():
         municipios = requests.get(f"{BACKEND_URL}/{endpoints['Municípios']}/contagem").json()
 
         # Linha 1
-        col1.metric("Total de Pacientes", extrair_count(pacientes))
-        col2.metric("Total de Hospitais", extrair_count(hospitais))
-        col3.metric("Total de Médicos", extrair_count(medicos))
+        col1.metric("Total de Pacientes", extrair_total(pacientes, "total_pacientes"))
+        col2.metric("Total de Hospitais", extrair_total(hospitais, "total_hospitais"))
+        col3.metric("Total de Médicos", extrair_total(medicos, "total_medicos"))
 
         # Linha 2
-        col4.metric("Total de Especialidades", extrair_count(especialidades))
-        col5.metric("Total de Municípios", extrair_count(municipios))
+        col4.metric("Total de Especialidades", extrair_total(especialidades, "total_especialidades"))
+        col5.metric("Total de Municípios", extrair_total(municipios, "total_municipios"))
         col6.empty()  # deixa a última coluna vazia para alinhar
+    
+    # ---------------------------
+    # Medicos por local 
+    # ---------------------------
+    elif aba_selecionada == "Médicos por local":
+        st.header("Médicos por local")
 
+        # Busca dados da API
+        resposta = requests.get(f"{BACKEND_URL}/medicos/local").json()
 
+        if isinstance(resposta, list) and resposta:
+
+            # Lista de estados únicos
+            estados_unicos = sorted(list({row["estado_uf"] for row in resposta}))
+            estado_selecionado = st.selectbox("Filtrar por Estado:", estados_unicos)
+
+            # Filtra dados do estado selecionado
+            dados_filtrados = [row for row in resposta if row["estado_uf"] == estado_selecionado]
+
+            if dados_filtrados:
+                todos_municipios = [row["municipio_nome"] for row in dados_filtrados]
+
+                municipios_selecionados = st.multiselect(
+                    "Selecionar Municípios (máx. 10, opcional):",
+                    options=todos_municipios
+                )
+
+                # Se o usuário selecionou municípios, aplica limite
+                if municipios_selecionados:
+                    if len(municipios_selecionados) > 10:
+                        st.warning("Você pode selecionar no máximo 10 municípios. Os primeiros 10 serão usados.")
+                        municipios_selecionados = municipios_selecionados[:10]
+
+                    # Filtra dados pelos municípios selecionados
+                    dados_filtrados = [row for row in dados_filtrados if row["municipio_nome"] in municipios_selecionados]
+
+                municipios = [row["municipio_nome"] for row in dados_filtrados]
+                totais = [row["total_medicos"] for row in dados_filtrados]
+
+                if dados_filtrados:
+                    option = {
+                        "title": {"text": f"Médicos por Município - {estado_selecionado}"},
+                        "tooltip": {},
+                        "xAxis": {
+                            "type": "category",
+                            "data": municipios,
+                            "axisLabel": {
+                                "rotate": 30,  # horizontal
+                                "interval": 0,
+                                "formatter": "{value}",
+                                "fontSize": 12,
+                                "margin": 25
+                            }
+                        },
+                        "yAxis": {"type": "value"},
+                        "series": [{"data": totais, "type": "bar", "itemStyle": {"color": "#4C66AF"}}],
+                        "grid": {"bottom": 120, "left": 60, "right": 40},
+                        "dataZoom": [
+                            {"type": "slider", "xAxisIndex": 0, "start": 0, "end": 20},
+                            {"type": "inside", "xAxisIndex": 0}
+                        ]
+                    }
+
+                    st_echarts(options=option, height="500px", width="100%")
+                else:
+                    st.warning("Nenhum médico encontrado para os municípios selecionados.")
+            else:
+                st.warning("Nenhum município encontrado para este estado.")
+        else:
+            st.warning("Nenhum dado de médicos por município encontrado.")
     # # ---------------------------
     # # Pacientes por Hospital
     # # ---------------------------
