@@ -1,24 +1,42 @@
 import streamlit as st
 from paginas import dashboard, tabelas, upload
 
-# Configuração da página
 st.set_page_config(
     page_title="APS - Agência Premiersoft de Saúde",
     layout="wide"
 )
 
 st.title("APS - Agência Premiersoft de Saúde")
+
+# Guarda a página atual
 if "pagina" not in st.session_state:
     st.session_state.pagina = "Dashboard"
 
-# Menu lateral como "nav"
-if st.sidebar.button("📊 Dashboard"):
-    st.session_state.pagina = "Dashboard"
-elif st.sidebar.button("📄 Tabelas"):
-    st.session_state.pagina = "Tabelas"
-elif st.sidebar.button("📁 Upload"):
-    st.session_state.pagina = "Upload"
-    
+st.markdown("""
+    <style>
+    /* Cor do botão selecionado */
+    div[role="radiogroup"] > label[data-baseweb="radio"] > div:first-child {
+        background-color: #E0F2FF !important; /* azul claro */
+        border-color: #A0C4FF !important;
+    }
+
+    /* Cor do texto do botão selecionado */
+    div[role="radiogroup"] > label[data-baseweb="radio"][aria-checked="true"] > div:nth-child(2) {
+        color: #1D4ED8 !important; /* azul escuro */
+        font-weight: bold;
+    }
+
+    /* Hover */
+    div[role="radiogroup"] > label[data-baseweb="radio"]:hover {
+        background-color: #F0F9FF !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.sidebar.markdown("## Navegação")
+pagina = st.sidebar.radio("Ir para:", ["Dashboard", "Tabelas", "Upload"], index=["Dashboard", "Tabelas", "Upload"].index(st.session_state.pagina))
+st.session_state.pagina = pagina
+
 st.markdown("---")
 
 # Mostra o conteúdo da aba selecionada
