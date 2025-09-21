@@ -13,22 +13,26 @@ if "pagina" not in st.session_state:
     st.session_state.pagina = "Dashboard"
 
 st.markdown("""
-    <style>
+   <style>
     /* Cor do botão selecionado */
-    div[role="radiogroup"] > label[data-baseweb="radio"] > div:first-child {
+    div[role="radiogroup"] > label[data-baseweb="radio"][aria-checked="true"] > div:first-child {
         background-color: #E0F2FF !important; /* azul claro */
         border-color: #A0C4FF !important;
     }
 
     /* Cor do texto do botão selecionado */
-    div[role="radiogroup"] > label[data-baseweb="radio"][aria-checked="true"] > div:nth-child(2) {
+    div[role="radiogroup"] > label[data-baseweb="radio"][aria-checked="true"] span {
         color: #1D4ED8 !important; /* azul escuro */
         font-weight: bold;
     }
 
-    /* Hover */
-    div[role="radiogroup"] > label[data-baseweb="radio"]:hover {
-        background-color: #F0F9FF !important;
+    /* Hover: muda fundo e texto */
+    div[role="radiogroup"] > label[data-baseweb="radio"]:hover > div:first-child {
+        background-color: #F0F9FF !important; /* fundo hover */
+    }
+
+    div[role="radiogroup"] > label[data-baseweb="radio"]:hover span {
+        color: black !important; /* texto hover */
     }
     </style>
 """, unsafe_allow_html=True)
