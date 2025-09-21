@@ -203,49 +203,90 @@ def read_medicos(file_path):
     print(f"{len(medicos)} médicos inseridos com sucesso!")
 
 
-import csv
-import uuid
-import xml.etree.ElementTree as ET
+BATCH_SIZE = 500
 
-def xml_para_csv(file_path, csv_path):
+def processa_paciente(paciente_elem, session):
+    # Processa o paciente a partir do XML
+    codigo = paciente_elem.findtext("Codigo")
+    cpf = paciente_elem.findtext("CPF")
+    nome = paciente_elem.findtext("Nome_Completo")
+    genero = paciente_elem.findtext("Genero")
+    cod_municipio = paciente_elem.findtext("Cod_municipio")
+    bairro = paciente_elem.findtext("Bairro")
+    convenio = paciente_elem.findtext("Convenio")
+    cid10_codigo = paciente_elem.findtext("CID-10").split(" ")[-1]
+
+    # Buscar CID10
+    cid10 = session.query(Cid10).filter_by(codigo=cid10_codigo).first()
+    if not cid10:
+        print(f"CID10 {cid10_codigo} não encontrado para paciente {nome}. Pulando...")
+        return None
+
+    # Converter código para UUID ou gerar novo caso inválido
+    try:
+        codigo_uuid = uuid.UUID(codigo)
+    except (ValueError, TypeError):
+        codigo_uuid = uuid.uuid4()
+
+    paciente = Paciente(
+        codigo=codigo_uuid,
+        cpf=cpf,
+        nome_completo=nome,
+        genero=genero,
+        municipio_id=cod_municipio,
+        bairro=bairro,
+        convenio=convenio,
+        cid10_id=cid10.codigo
+    )
+    return paciente
+
+
+def processa_pacientes_arquivo(file_path, session):
     contexto = ET.iterparse(file_path, events=("end",))
-    with open(csv_path, mode='w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(['codigo', 'cpf', 'nome_completo', 'genero', 'municipio_id', 'bairro', 'convenio', 'cid10_id'])  # Cabeçalho
-        for evento, elem in contexto:
-            if elem.tag == "Paciente":
-                codigo = elem.findtext("Codigo")
-                cpf = elem.findtext("CPF")
-                nome = elem.findtext("Nome_Completo")
-                genero = elem.findtext("Genero")
-                cod_municipio = elem.findtext("Cod_municipio")
-                bairro = elem.findtext("Bairro")
-                convenio = elem.findtext("Convenio")
-                cid10_codigo = elem.findtext("CID-10").split(" ")[-1]
+    pacientes_batch = []
 
-                try:
-                    codigo_uuid = uuid.UUID(codigo)
-                except (ValueError, TypeError):
-                    codigo_uuid = uuid.uuid4()
+    for evento, elem in contexto:
+        if elem.tag == "Paciente":
+            paciente = processa_paciente(elem, session)
+            elem.clear()  # libera memória
+            if paciente:
+                pacientes_batch.append(paciente)
 
-                # Aqui você poderia consultar diretamente o código CID10 se necessário
-                row = [codigo_uuid, cpf, nome, genero, cod_municipio, bairro, convenio, cid10_codigo]
-                writer.writerow(row)
-                elem.clear()  # Libera memória
+            if len(pacientes_batch) >= BATCH_SIZE:
+                # Insere pacientes em batch ignorando duplicatas
+                insert_pacientes_ignore_duplicates(pacientes_batch, session)
+                pacientes_batch.clear()
 
-def load_data_infile(csv_path, session):
-    # Conectar ao MySQL e usar LOAD DATA INFILE
-    connection = session.connection()
-    query = f"""
-        LOAD DATA LOCAL INFILE '{csv_path}'
-        INTO TABLE paciente
-        FIELDS TERMINATED BY ','
-        LINES TERMINATED BY '\n'
-        IGNORE 1 ROWS
-        (codigo, cpf, nome_completo, genero, municipio_id, bairro, convenio, cid10_id);
-    """
-    connection.execute(query)
-    print("Carga de dados em massa completa.")
+    # Inserir os pacientes que restaram
+    if pacientes_batch:
+        insert_pacientes_ignore_duplicates(pacientes_batch, session)
+
+
+def insert_pacientes_ignore_duplicates(pacientes_batch, session):
+    # Coleta os dados para inserção em batch
+    values = [
+        {
+            'codigo': p.codigo,
+            'cpf': p.cpf,
+            'nome_completo': p.nome_completo,
+            'genero': p.genero,
+            'municipio_id': p.municipio_id,
+            'bairro': p.bairro,
+            'convenio': p.convenio,
+            'cid10_id': p.cid10_id
+        }
+        for p in pacientes_batch
+    ]
+
+    if not values:
+        return
+
+    # Cria a query com INSERT IGNORE
+    stmt = mysql_insert(Paciente).values(values).prefix_with("IGNORE")
+    
+    # Executa a query
+    session.execute(stmt)
+    session.commit()
 
 
 
@@ -257,8 +298,5 @@ if __name__ == "__main__":
     # read_especialidades('sheet/hospitais.csv')
     # read_hospitais('sheet/hospitais.csv')
     # read_medicos('sheet/medicos.csv')
-    # Primeiro converte o XML para CSV
-    xml_para_csv('sheet/pacientes.xml', 'sheet/pacientes.csv')
-    # Em seguida, carrega o CSV no banco
-    load_data_infile('sheet/pacientes.csv', session)
+    processa_pacientes_arquivo('sheet/pacientes.xml', session)
     session.close()
