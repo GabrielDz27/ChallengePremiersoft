@@ -27,3 +27,11 @@ class MedicoPorLocalResponse(BaseModel):
         "from_attributes": True
     }
 
+
+class MedicoPorEspecialidadeResponse(BaseModel):
+    especialidade_nome: str  # Nome da especialidade
+    total_medicos: int  # Total de médicos na especialidade
+
+    class Config:
+        # Tornar os campos compatíveis com o formato de resposta JSON
+        orm_mode = True

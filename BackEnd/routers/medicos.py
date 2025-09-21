@@ -7,9 +7,9 @@ from sqlalchemy import func
 
 from schemas.contagem import ContagemResponse  # Importando o modelo de resposta
 from database import get_db
-from models import Medico, Municipio, Estado
+from models import Medico, Municipio, Estado, Especialidade  
 from schemas import medico as medico_schemas
-from schemas.medico import MedicoResponse, MedicoPorLocalResponse  
+from schemas.medico import MedicoResponse, MedicoPorLocalResponse, MedicoPorEspecialidadeResponse
 
 router = APIRouter(prefix="/medicos", tags=["Médicos"])
 
@@ -68,6 +68,38 @@ def listar_medicos_detalhado(
             total_medicos=row.total_medicos,
             municipio_nome=row.municipio_nome,
             estado_uf=row.estado_uf
+        )
+        for row in resultados
+    ]
+
+
+@router.get("/especialidade", response_model=List[MedicoPorEspecialidadeResponse])
+def listar_medicos_por_especialidade(
+    db: Session = Depends(get_db),
+    limit: Optional[int] = None
+):
+    # Query ajustada para contar médicos por especialidade
+    stmt = (
+        db.query(
+            Especialidade.nome.label("especialidade_nome"),
+            func.count(Medico.codigo).label("total_medicos")  # Contagem de médicos
+        )
+        .join(Especialidade, Medico.especialidade_id == Especialidade.id, isouter=True)  # LEFT JOIN
+        .group_by(Especialidade.nome)  # Agrupando por especialidade
+    )
+
+    # Aplicando o limite, se necessário
+    if limit:
+        stmt = stmt.limit(limit)
+
+    # Executando a consulta e coletando os resultados
+    resultados = stmt.all()
+
+    # Montando a resposta
+    return [
+        MedicoPorEspecialidadeResponse(
+            especialidade_nome=row.especialidade_nome,
+            total_medicos=row.total_medicos
         )
         for row in resultados
     ]
