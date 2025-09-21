@@ -7,9 +7,10 @@ from sqlalchemy import func
 
 from schemas.contagem import ContagemResponse  # Importando o modelo de resposta
 from database import get_db
-from models import Medico, Municipio, Estado, Especialidade  
+from models import Medico, Municipio, Estado, Especialidade, Hospital, medicos_hospitais
 from schemas import medico as medico_schemas
 from schemas.medico import MedicoResponse, MedicoPorLocalResponse, MedicoPorEspecialidadeResponse, MedicoPorEspecialidadePorRegiaoResponse
+from schemas.medico import MedicoPorEspecialidadePorHospitalResponse
 
 router = APIRouter(prefix="/medicos", tags=["Médicos"])
 
@@ -133,6 +134,41 @@ def listar_medicos_por_especialidade_por_regiao(
         MedicoPorEspecialidadePorRegiaoResponse(
             especialidade_nome=row.especialidade_nome,
             estado_uf=row.estado_uf,
+            total_medicos=row.total_medicos
+        )
+        for row in resultados
+    ]
+
+@router.get("/especialidade/hospital", response_model=List[MedicoPorEspecialidadePorHospitalResponse])
+def listar_medicos_por_especialidade_por_hospital(
+    db: Session = Depends(get_db),
+    limit: Optional[int] = None
+):
+    # Query ajustada para contar médicos por especialidade e hospital
+    stmt = (
+        db.query(
+            Especialidade.nome.label("especialidade_nome"),
+            Hospital.nome.label("hospital_nome"),
+            func.count(Medico.codigo).label("total_medicos")  # Contagem de médicos
+        )
+        .join(Especialidade, Medico.especialidade_id == Especialidade.id)  # JOIN entre Medico e Especialidade
+        .join(medicos_hospitais, medicos_hospitais.c.medico_codigo == Medico.codigo)  # JOIN com tabela intermediária
+        .join(Hospital, medicos_hospitais.c.hospital_codigo == Hospital.codigo)  # JOIN entre Hospital e tabela intermediária
+        .group_by(Especialidade.nome, Hospital.nome)  # Agrupando por especialidade e hospital
+    )
+
+    # Aplicando o limite, se necessário
+    if limit:
+        stmt = stmt.limit(limit)
+
+    # Executando a consulta e coletando os resultados
+    resultados = stmt.all()
+
+    # Montando a resposta
+    return [
+        MedicoPorEspecialidadePorHospitalResponse(
+            especialidade_nome=row.especialidade_nome,
+            hospital_nome=row.hospital_nome,
             total_medicos=row.total_medicos
         )
         for row in resultados
