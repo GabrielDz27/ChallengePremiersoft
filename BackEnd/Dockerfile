@@ -10,10 +10,7 @@ RUN pip install --upgrade pip \
 # Copia todo o backend
 COPY . .
 
-# Dá permissão de execução para o entrypoint
-RUN chmod +x docker-entrypoint.sh
-
 EXPOSE 8000
 
-# Define entrypoint
-CMD ["./docker-entrypoint.sh"]
+# Roda init_db.py e depois main.py
+CMD ["sh", "-c", "python ./init_db.py && python ./main.py"]

@@ -17,3 +17,4 @@ uvicorn==0.36.0
 cryptography
 pandas
 openpyxl
+python-dotenv==1.1.1
