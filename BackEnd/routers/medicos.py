@@ -27,7 +27,15 @@ def criar_medico(medico: medico_schemas.MedicoCreate, db: Session = Depends(get_
     return novo_medico
 
 @router.get("/", response_model=list[MedicoResponse])
-def listar_medicos(db: Session = Depends(get_db), limit: Optional[int] = Query(None, gt=0)):
+def listar_medicos(
+    db: Session = Depends(get_db),
+    limit: Optional[int] = Query(None, gt=0),
+    count_only: Optional[bool] = Query(False)
+):
+    if count_only:
+        total = db.query(Medico).count()
+        return {"total_medicos": total}
+
     query = db.query(Medico)
     if limit:
         query = query.limit(limit)
