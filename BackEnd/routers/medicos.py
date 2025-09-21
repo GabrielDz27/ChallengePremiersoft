@@ -45,7 +45,7 @@ def contar_medicos(db: Session = Depends(get_db)):
 @router.get("/local", response_model=List[MedicoPorLocalResponse])
 def listar_medicos_detalhado(
     db: Session = Depends(get_db),
-    limit: Optional[int] = None
+    limit: Optional[int] = None, uf: Optional[str] = "SC"
 ):
     stmt = (
         db.query(
@@ -54,7 +54,7 @@ def listar_medicos_detalhado(
             Estado.uf.label("estado_uf")
         )
         .join(Municipio, Medico.municipio_id == Municipio.codigo_ibge, isouter=True)
-        .join(Estado, Municipio.codigo_uf == Estado.codigo_uf, isouter=True)
+        .join(Estado, Municipio.codigo_uf == Estado.codigo_uf, isouter=True).where(Estado.uf == uf)
         .group_by(Estado.uf, Municipio.nome)
     )
 
