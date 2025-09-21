@@ -11,12 +11,12 @@ def show():
         "Hospitais": "hospitais",
         "Médicos": "medicos",
         "Especialidades": "especialidades",
-        "Hospitais-Especialidades": "hospitais_especialidades",
-        "Médicos-Hospitais": "medicos_hospitais",
-        "Pacientes-Hospitais": "pacientes_hospitais",
-        "CID-10": "cid10",
-        "Estados": "estados",
-        "Municípios": "municipios",
+        # "Hospitais-Especialidades": "hospitais_especialidades",
+        # "Médicos-Hospitais": "medicos_hospitais",
+        # "Pacientes-Hospitais": "pacientes_hospitais",
+        # "CID-10": "cid10",
+        # "Estados": "estados",
+        # "Municípios": "municipios",
     }
 
     colunas_amigaveis = {
@@ -32,7 +32,7 @@ def show():
 
     for nome, aba in zip(endpoints.keys(), abas):
         with aba:
-            st.write(f"📌 Dados de **{nome}**")
+            st.write(f"Dados de **{nome}**")
             try:
                 response = requests.get(f"{BACKEND_URL}/{endpoints[nome]}")
                 response.raise_for_status()
