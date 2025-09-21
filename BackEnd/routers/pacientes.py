@@ -35,21 +35,30 @@ def contar_pacientes(db: Session = Depends(get_db)):
 
 # Endpoint para contar doenças agrupadas por CID-10
 @router.get("/doencas", response_model=List[DoencaContagemResponse])
-def contar_doencas(db: Session = Depends(get_db), limit: Optional[int] = None):
-    stmt = (
+def contar_doencas(db: Session = Depends(get_db), limit: Optional[int] = 25):
+    # 1. Primeira parte: cria a subconsulta para pegar os pacientes
+    subquery = (
         db.query(
-            Cid10.descricao.label("descricao_doenca"),
-            func.count(Paciente.cid10_id).label("total_pacientes")
+            Paciente.cid10_id,  # Aqui pegamos o ID da doença associada a cada paciente
+            func.count(Paciente.cid10_id).label("total_pacientes")  # Conta os pacientes por doença
         )
-        .join(Paciente, Paciente.cid10_id == Cid10.codigo)
-        .group_by( Cid10.descricao)
+        .group_by(Paciente.cid10_id).limit(limit)  # Agrupa pela doença (cid10_id)
+        .subquery()  # Converte em uma subconsulta
     )
 
-    if limit:
-        stmt = stmt.limit(limit)
+    # 2. Segunda parte: agora faz o JOIN com a tabela Cid10 para pegar as informações das doenças
+    stmt = (
+        db.query(
+            Cid10.descricao.label("descricao_doenca"),  # Nome da doença
+            subquery.c.total_pacientes  # O número de pacientes para cada doença
+        )
+        .join(subquery, Cid10.codigo == subquery.c.cid10_id)  # Faz o JOIN com a subconsulta (associando a doença com a contagem de pacientes)
+    )
 
+    # 4. Executa a consulta e pega os resultados
     resultados = stmt.all()
 
+    # 5. Retorna os resultados no formato adequado
     return [
         DoencaContagemResponse(
             descricao_doenca=row.descricao_doenca,
@@ -57,5 +66,4 @@ def contar_doencas(db: Session = Depends(get_db), limit: Optional[int] = None):
         )
         for row in resultados
     ]
-
 # Exemplo de um possível schema para DoencaContagemResponse
