@@ -54,17 +54,18 @@ def listar_hospitais_detalhado(
     stmt = (
         db.query(
             func.count(Hospital.codigo).label("total_hospitais"),
-            Municipio.nome.label("municipio_nome"),
             Estado.uf.label("estado_uf")
         )
         .join(Municipio, Hospital.municipio_id == Municipio.codigo_ibge, isouter=True)
         .join(Estado, Municipio.codigo_uf == Estado.codigo_uf, isouter=True)
-        .where(Estado.uf == uf)
-        .group_by(Estado.uf, Municipio.nome)
+        .group_by(Estado.uf)
     )
 
     if limit:
         stmt = stmt.limit(limit)
+    
+    if uf:
+        stmt = stmt.where(Estado.uf == uf)
     
 
     resultados = stmt.all()
@@ -72,7 +73,6 @@ def listar_hospitais_detalhado(
     return [
         HospitalPorLocalResponse(
             total_hospitais=row.total_hospitais,
-            municipio_nome=row.municipio_nome,
             estado_uf=row.estado_uf
         )
         for row in resultados
