@@ -2,7 +2,10 @@ from sys import prefix
 from fastapi import FastAPI
 from routers import medicos
 
-app = FastAPI()
+app = FastAPI(
+redoc_url="/custom-redoc", # Serve ReDoc at /custom-redoc
+docs_url=None # Disable Swagger UI
+)
 
 prefix="/api/v1"
 
