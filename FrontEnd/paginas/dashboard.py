@@ -2,12 +2,17 @@ import os
 import streamlit as st
 import requests
 from streamlit_echarts import st_echarts
-
+import folium
+from streamlit_folium import st_folium
+import numpy as np
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderQuotaExceeded
+import time
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000/api/v1")
 
 def show():
-    endpoints = {
+    endpoints = {   
         "Pacientes": "pacientes",
         "Hospitais": "hospitais",
         "Médicos": "medicos",
@@ -132,6 +137,97 @@ def show():
                     }
 
                     st_echarts(options=option, height="500px", width="100%")
+
+                if dados_filtrados:
+
+                    geolocator = Nominatim(user_agent="medicos_municipios_app")
+                    geocode_cache = {}
+
+                    def geocode_municipio(nome_municipio, uf):
+                        chave = f"{nome_municipio}, {uf}, Brasil"
+                        if chave in geocode_cache:
+                            return geocode_cache[chave]
+                        for _ in range(3):  
+                            try:
+                                location = geolocator.geocode(chave, timeout=10)
+                                if location:
+                                    geocode_cache[chave] = (location.latitude, location.longitude)
+                                    return location.latitude, location.longitude
+                            except GeocoderTimedOut:
+                                time.sleep(1)
+                            except GeocoderQuotaExceeded:
+                                st.error("Limite de requisições atingido no serviço de geocodificação. Tente novamente mais tarde.")
+                                return None, None
+                        return None, None
+
+                    for row in dados_filtrados:
+                        lat, lon = geocode_municipio(row["municipio_nome"], row["estado_uf"])
+                        row["latitude"] = lat
+                        row["longitude"] = lon
+
+                    dados_filtrados = [
+                        row for row in dados_filtrados
+                        if row.get("latitude") is not None and row.get("longitude") is not None
+                    ]
+
+                    if not dados_filtrados:
+                        st.warning("Não foi possível localizar geograficamente os municípios selecionados.")
+                    else:
+
+                        colors = [
+                            "#f7fbff", "#deebf7", "#c6dbef", "#9ecae1", "#6baed6",
+                            "#4292c6", "#2171b5", "#08519c", "#08306b", "#041f4a"
+                        ]
+
+                        valores = [row["total_medicos"] for row in dados_filtrados]
+                        valor_min = min(valores)
+                        valor_max = max(valores)
+                        intervalos = np.linspace(valor_min, valor_max, num=11)
+
+                        def get_cor_por_valor(valor):
+                            for i in range(10):
+                                if intervalos[i] <= valor < intervalos[i + 1]:
+                                    return colors[i]
+                            return colors[-1]
+
+                        lat_default = dados_filtrados[0]["latitude"]
+                        lon_default = dados_filtrados[0]["longitude"]
+                        mapa = folium.Map(location=[lat_default, lon_default], zoom_start=6)
+
+                        for row in dados_filtrados:
+                            municipio = row["municipio_nome"]
+                            total = row["total_medicos"]
+                            lat = row["latitude"]
+                            lon = row["longitude"]
+                            cor = get_cor_por_valor(total)
+                            popup_text = f"<b>{municipio}</b><br>Médicos: {total}"
+
+                            folium.CircleMarker(
+                                location=[lat, lon],
+                                radius=10,
+                                popup=popup_text,
+                                color=cor,
+                                fill=True,
+                                fill_color=cor,
+                                fill_opacity=0.8
+                            ).add_to(mapa)
+
+                        st.subheader(f"Mapa de Médicos por Município - {estado_selecionado}")
+                        st_folium(mapa, width=700, height=550)
+
+                        st.markdown("#### Legenda de Médicos por Município")
+                        for i in range(10):
+                            minimo = int(intervalos[i])
+                            maximo = int(intervalos[i + 1]) - 1 if i < 9 else int(intervalos[i + 1])
+                            legenda_cor = (
+                                f"<div style='display:flex; align-items:center;'>"
+                                f"<div style='width:20px; height:20px; background-color:{colors[i]}; "
+                                "margin-right:10px; border:1px solid #aaa;'></div>"
+                                f"{minimo} - {maximo} médicos"
+                                "</div>"
+                            )
+                            st.markdown(legenda_cor, unsafe_allow_html=True)
+
                 else:
                     st.warning("Nenhum médico encontrado para os municípios selecionados.")
             else:
@@ -176,11 +272,11 @@ def show():
                         "type": "category",
                         "data": doencas,
                         "axisLabel": {
-                            "rotate": 0, 
+                            "rotate": 10, 
                             "interval": 0,
                             "formatter": "{value}",
-                            "fontSize": 12,
-                            "margin": 25
+                            "fontSize": 10,
+                            "margin": 50
                         }
                     },
                     "yAxis": {"type": "value"},
