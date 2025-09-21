@@ -17,3 +17,14 @@ class MedicoResponse(MedicoBase):
     model_config = {
         "from_attributes": True
     }
+
+class MedicoDetalhadoResponse(BaseModel):
+    codigo: UUID4
+    nome_completo: str
+    especialidade_id: int
+    municipio_nome: Optional[str] = None
+    estado_uf: Optional[str] = None
+
+    model_config = {
+        "from_attributes": True
+    }
