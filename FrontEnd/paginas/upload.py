@@ -5,7 +5,7 @@ import pandas as pd
 import xml.etree.ElementTree as ET
 import io
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000/api/v1")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://0.0.0.0:8000/api/v1")
 
 TIPOS_DADOS = {
     "Pacientes": "pacientes",

@@ -12,5 +12,7 @@ COPY . .
 
 EXPOSE 8000
 
-# Roda init_db.py e depois main.py
-CMD ["sh", "-c", "python ./init_db.py && python ./main.py"]
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
+CMD ["/app/docker-entrypoint.sh"]

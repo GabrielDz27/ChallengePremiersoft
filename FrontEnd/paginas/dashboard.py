@@ -9,7 +9,7 @@ from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderQuotaExceeded
 import time
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000/api/v1")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://0.0.0.0:8000/api/v1")
 
 def show():
     endpoints = {   
