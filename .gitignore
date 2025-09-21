@@ -176,6 +176,7 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/python
 
 pacientes.xml
+BackEnd/sheet/pacientes.csv
 BackEnd/sheet/pacientes.xml
 
 *.pyc
