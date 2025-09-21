@@ -21,7 +21,6 @@ class HospitalResponse(BaseModel):
 
 class HospitalPorLocalResponse(BaseModel):
     total_hospitais: int  # Total de hospitais
-    municipio_nome: str  # Nome do município
     estado_uf: str  # Unidade Federativa (UF) do estado
 
     class Config:
