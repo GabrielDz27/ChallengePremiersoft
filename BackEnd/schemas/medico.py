@@ -4,7 +4,7 @@ from pydantic import BaseModel, UUID4
 from typing import Optional
 
 class MedicoBase(BaseModel):
-    nome_completo: str
+    nome: str
     especialidade_id: int
     municipio_id: int
 
