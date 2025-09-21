@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from uuid import uuid4
 from sqlalchemy import func
+from schemas.contagem import ContagemResponse  # Importando o modelo de resposta
 
 from database import get_db
 from models import Paciente, Cid10
@@ -27,10 +28,10 @@ def criar_paciente(paciente: PacienteCreate, db: Session = Depends(get_db)):
     return novo_paciente
 
 # Endpoint para contar pacientes
-@router.get("/contagem", response_model=dict)
+@router.get("/contagem", response_model=ContagemResponse)
 def contar_pacientes(db: Session = Depends(get_db)):
     total = db.query(Paciente).count()
-    return {"total_pacientes": total}
+    return ContagemResponse(total_pacientes=total)
 
 # Endpoint para contar doenças agrupadas por CID-10
 @router.get("/doencas", response_model=List[DoencaContagemResponse])

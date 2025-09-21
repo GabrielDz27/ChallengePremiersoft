@@ -5,6 +5,7 @@ from uuid import uuid4
 from pydantic import BaseModel
 from sqlalchemy import func
 
+from schemas.contagem import ContagemResponse  # Importando o modelo de resposta
 from database import get_db
 from models import Medico, Municipio, Estado
 from schemas import medico as medico_schemas
@@ -36,10 +37,10 @@ def listar_medicos(
         query = query.limit(limit)
     return query.all()
 
-@router.get("/contagem", response_model=dict)
+@router.get("/contagem", response_model=ContagemResponse)
 def contar_medicos(db: Session = Depends(get_db)):
     total = db.query(Medico).count()
-    return {"total_medicos": total}
+    return ContagemResponse(total_medicos=total)
 
 @router.get("/local", response_model=List[MedicoPorLocalResponse])
 def listar_medicos_detalhado(

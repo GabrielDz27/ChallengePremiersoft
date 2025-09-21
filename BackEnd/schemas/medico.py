@@ -26,3 +26,4 @@ class MedicoPorLocalResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
