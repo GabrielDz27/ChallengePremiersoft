@@ -1,14 +1,16 @@
+version: "3.9"
+
 services:
-  mysql: # Configuração padrão de MySQL
+  mysql:
     image: mysql:8.0.31
     container_name: mysql
     environment:
-      MYSQL_ROOT_PASSWORD: 123456 # Root password for MySQL
-      MYSQL_DATABASE: data_saude  # Database name to create at startup
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: data_saude
     ports:
-      - "3306:3306"  # Exposing MySQL port
+      - "3306:3306"
     volumes:
-      - db-data:/var/lib/mysql  # Persistent volume for MySQL data
+      - db-data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -17,32 +19,28 @@ services:
       start_period: 30s
 
   backend:
-    image: premier-backend:latest  # Replace with the image for your Python 3.13 app
     build:
-      context: ./Backend  # Assuming the backend Dockerfile is inside the 'backend' folder
+      context: ./Backend   # Pasta onde está o Dockerfile do backend
     container_name: backend
     ports:
-      - "8000:8000"  # Exposing port 8000 on the host to 8000 inside the container
+      - "8000:8000"
     environment:
-      - DATABASE_CONNECTION_STRING=mysql+pymysql://root:123456@mysql:3306/data_saude  # Database connection string
+      - DATABASE_CONNECTION_STRING=mysql+pymysql://root:123456@mysql:3306/data_saude
     depends_on:
       mysql:
-        condition: service_healthy  # Ensure MySQL is healthy before starting the backend
+        condition: service_healthy
 
   frontend:
-    image: premier-frontend:latest  # Replace with your frontend image (e.g., React, Next.js, etc.)
     build:
-      context: ./FrontEnd  # Assuming the frontend Dockerfile is inside the 'frontend' folder
+      context: ./FrontEnd   # Pasta onde está o Dockerfile do frontend
     container_name: frontend
     ports:
-      - "8501:8501"  # Exposing port 8501 on the host to 8501 inside the container
+      - "8501:8501"
     environment:
-      - BACKEND_URL=http://backend:8000/api/v1  # Set backend URL for frontend to connect
+      - BACKEND_URL=http://backend:8000/api/v1
     depends_on:
-      - backend  # Ensure the backend service is running before starting the frontend
+      - backend
 
-
-# Volumes to persist data
 volumes:
   db-data:
-    driver: local  # Use local driver for volume persistence
+    driver: local

@@ -298,12 +298,7 @@ if __name__ == "__main__":
     # read_especialidades('sheet/hospitais.csv')
     # read_hospitais('sheet/hospitais.csv')
     # read_medicos('sheet/medicos.csv')
-<<<<<<< Updated upstream
+
     processa_pacientes_arquivo('sheet/pacientes.xml', session)
-=======
-    # Primeiro converte o XML para CSV
-    # xml_para_csv('sheet/pacientes.xml', 'sheet/pacientes.csv')
-    # Em seguida, carrega o CSV no banco
-    load_data_infile('sheet/pacientes.csv', session)
->>>>>>> Stashed changes
+
     session.close()
