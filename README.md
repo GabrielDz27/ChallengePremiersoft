@@ -103,12 +103,18 @@ Usuário → Frontend (Streamlit) → Backend (FastAPI) → Banco MySQL
 - ✅ **API:** endpoints documentados automaticamente pelo **Swagger** em [http://localhost:8000/docs](http://localhost:8000/docs).  
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 ---
 =======
+=======
+>>>>>>> Stashed changes
 ---
 
 ## 🚀 Próximos Passos
 - Implementação de autenticação e níveis de acesso.  
 - Melhorias na análise de dados com dashboards avançados.  
 - Integração com APIs de saúde externas (ex: DATASUS).  
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
