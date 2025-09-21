@@ -102,4 +102,13 @@ Usuário → Frontend (Streamlit) → Backend (FastAPI) → Banco MySQL
 - ✅ **Arquitetura:** documentada (diagrama do banco + explicação dos módulos).  
 - ✅ **API:** endpoints documentados automaticamente pelo **Swagger** em [http://localhost:8000/docs](http://localhost:8000/docs).  
 
+<<<<<<< Updated upstream
 ---
+=======
+---
+
+## 🚀 Próximos Passos
+- Implementação de autenticação e níveis de acesso.  
+- Melhorias na análise de dados com dashboards avançados.  
+- Integração com APIs de saúde externas (ex: DATASUS).  
+>>>>>>> Stashed changes
