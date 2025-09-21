@@ -67,7 +67,7 @@ def show():
             st.dataframe(df)
 
             # Envio para backend
-            if st.button("Enviar para o backend"):
+            if st.button("Enviar"):
                 dados = df.to_dict(orient="records")
                 response = requests.post(f"{BACKEND_URL}/{tipo_endpoint}", json=dados)
                 response.raise_for_status()
