@@ -1,26 +1,23 @@
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from uuid import uuid4
+from sqlalchemy import func
 
 from database import get_db
-from models import Paciente
-from schemas import paciente as paciente_schemas
-from schemas.paciente import PacienteResponse
+from models import Paciente, Cid10
+from schemas.paciente import PacienteResponse, PacienteCreate, DoencaContagemResponse  
 
 router = APIRouter(prefix="/pacientes", tags=["Pacientes"])
 
-
+# Endpoint para criação de paciente
 @router.post("/", response_model=PacienteResponse)
-def criar_paciente(paciente: paciente_schemas.PacienteCreate, db: Session = Depends(get_db)):
+def criar_paciente(paciente: PacienteCreate, db: Session = Depends(get_db)):
     novo_paciente = Paciente(
         codigo=uuid4(),
-        cpf=paciente.cpf,
         nome_completo=paciente.nome_completo,
-        genero=paciente.genero,
+        cpf=paciente.cpf,
         municipio_id=paciente.municipio_id,
-        bairro=paciente.bairro,
-        convenio=paciente.convenio,
         cid10_id=paciente.cid10_id
     )
     
@@ -29,26 +26,35 @@ def criar_paciente(paciente: paciente_schemas.PacienteCreate, db: Session = Depe
     db.refresh(novo_paciente)
     return novo_paciente
 
+# Endpoint para contar pacientes
+@router.get("/contagem", response_model=dict)
+def contar_pacientes(db: Session = Depends(get_db)):
+    total = db.query(Paciente).count()
+    return {"total_pacientes": total}
 
-@router.get("/", response_model=list[PacienteResponse])
-def listar_pacientes(
-    db: Session = Depends(get_db),
-    limit: Optional[int] = Query(None, gt=0),
-    count_only: Optional[bool] = Query(False)
-):
-    if count_only:
-        total = db.query(Paciente).count()
-        return {"total_pacientes": total}
+# Endpoint para contar doenças agrupadas por CID-10
+@router.get("/doencas", response_model=List[DoencaContagemResponse])
+def contar_doencas(db: Session = Depends(get_db), limit: Optional[int] = None):
+    stmt = (
+        db.query(
+            Cid10.descricao.label("descricao_doenca"),
+            func.count(Paciente.cid10_id).label("total_pacientes")
+        )
+        .join(Paciente, Paciente.cid10_id == Cid10.codigo)
+        .group_by( Cid10.descricao)
+    )
 
-    query = db.query(Paciente)
     if limit:
-        query = query.limit(limit)
-    return query.all()
+        stmt = stmt.limit(limit)
 
+    resultados = stmt.all()
 
-@router.get("/{codigo}", response_model=PacienteResponse)
-def obter_paciente(codigo: str, db: Session = Depends(get_db)):
-    paciente = db.query(Paciente).filter_by(codigo=codigo).first()
-    if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
-    return paciente
+    return [
+        DoencaContagemResponse(
+            descricao_doenca=row.descricao_doenca,
+            total_pacientes=row.total_pacientes
+        )
+        for row in resultados
+    ]
+
+# Exemplo de um possível schema para DoencaContagemResponse
