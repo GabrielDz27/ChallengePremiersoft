@@ -1,7 +1,7 @@
 import os
 import streamlit as st
 import requests
-# from streamlit_echarts import st_echarts
+from streamlit_echarts import st_echarts
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000/api/v1")
 
@@ -49,20 +49,37 @@ def show():
     # Métricas Gerais
     # ---------------------------
     if aba_selecionada == "Métricas Gerais":
-        st.title("Métricas Gerais")
+        st.header("📊 Métricas Gerais")
+
+        def extrair_count(valor):
+            if isinstance(valor, dict):
+                return valor.get("count", 0)
+            elif isinstance(valor, int) or isinstance(valor, float):
+                return valor
+            else:
+                return 0
+
+        # Criar duas linhas de três colunas
         col1, col2, col3 = st.columns(3)
-        
-        pacientes = requests.get(f"{BACKEND_URL}/{endpoints['Pacientes']}").json()
-        hospitais = requests.get(f"{BACKEND_URL}/{endpoints['Hospitais']}").json()
-        medicos = requests.get(f"{BACKEND_URL}/{endpoints['Médicos']}").json()
-        especialidades = requests.get(f"{BACKEND_URL}/{endpoints['Especialidades']}").json()
-        municipios = requests.get(f"{BACKEND_URL}/{endpoints['Municípios']}").json()
-        
-        # col1.metric("Total de Pacientes", len(pacientes))
-        # col2.metric("Total de Hospitais", len(hospitais))
-        # col3.metric("Total de Médicos", len(medicos))
-        # st.metric("Total de Especialidades", len(especialidades))
-        # st.metric("Total de Municípios", len(municipios))
+        col4, col5, col6 = st.columns(3)
+
+        # Buscar dados da API
+        pacientes = requests.get(f"{BACKEND_URL}/{endpoints['Pacientes']}?count_only=true").json()
+        hospitais = requests.get(f"{BACKEND_URL}/{endpoints['Hospitais']}?count_only=true").json()
+        medicos = requests.get(f"{BACKEND_URL}/{endpoints['Médicos']}?count_only=true").json()
+        especialidades = requests.get(f"{BACKEND_URL}/{endpoints['Especialidades']}?count_only=true").json()
+        municipios = requests.get(f"{BACKEND_URL}/{endpoints['Municípios']}?count_only=true").json()
+
+        # Linha 1
+        col1.metric("Total de Pacientes", extrair_count(pacientes))
+        col2.metric("Total de Hospitais", extrair_count(hospitais))
+        col3.metric("Total de Médicos", extrair_count(medicos))
+
+        # Linha 2
+        col4.metric("Total de Especialidades", extrair_count(especialidades))
+        col5.metric("Total de Municípios", extrair_count(municipios))
+        col6.empty()  # deixa a última coluna vazia para alinhar
+
 
     # # ---------------------------
     # # Pacientes por Hospital
@@ -86,27 +103,11 @@ def show():
     #     }
     #     st_echarts(options=option, height="500px")
 
-    # # ---------------------------
-    # # Médicos por Especialidade
-    # # ---------------------------
-    # elif aba_selecionada == "Médicos por Especialidade":
-    #     st.title("Médicos por Especialidade")
-    #     med = requests.get(f"{BACKEND_URL}/{endpoints['Médicos']}").json()
-    #     esp = requests.get(f"{BACKEND_URL}/{endpoints['Especialidades']}").json()
-        
-    #     # Contagem de médicos por especialidade
-    #     contagem = {e['id']: 0 for e in esp}
-    #     for m in med:
-    #         contagem[m['especialidade_id']] += 1
-    #     labels = [e['nome'] for e in esp]
-    #     values = [contagem[e['id']] for e in esp]
-        
-    #     option = {
-    #         "series": [{
-    #             "type": "pie",
-    #             "data": [{"value": v, "name": l} for v, l in zip(values, labels)]
-    #         }]
-    #     }
+    # ---------------------------
+    # Médicos por Especialidade
+    # ---------------------------
+    # elif aba_selecionada == "Médicos por Especialidade": #fazer grficco por especialidade
+       
     #     st_echarts(options=option, height="500px")
 
     # # ---------------------------
