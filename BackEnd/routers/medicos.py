@@ -8,7 +8,7 @@ from sqlalchemy import func
 from database import get_db
 from models import Medico, Municipio, Estado
 from schemas import medico as medico_schemas
-from schemas.medico import MedicoResponse, MedicoDetalhadoResponse  
+from schemas.medico import MedicoResponse, MedicoPorLocalResponse  
 
 router = APIRouter(prefix="/medicos", tags=["Médicos"])
 
@@ -41,7 +41,7 @@ def contar_medicos(db: Session = Depends(get_db)):
     total = db.query(Medico).count()
     return {"total_medicos": total}
 
-@router.get("/detalhado", response_model=List[MedicoDetalhadoResponse])
+@router.get("/local", response_model=List[MedicoPorLocalResponse])
 def listar_medicos_detalhado(
     db: Session = Depends(get_db),
     limit: Optional[int] = None
@@ -63,7 +63,7 @@ def listar_medicos_detalhado(
     resultados = stmt.all()
 
     return [
-        MedicoDetalhadoResponse(
+        MedicoPorLocalResponse(
             total_medicos=row.total_medicos,
             municipio_nome=row.municipio_nome,
             estado_uf=row.estado_uf

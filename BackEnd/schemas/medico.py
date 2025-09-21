@@ -18,10 +18,8 @@ class MedicoResponse(MedicoBase):
         "from_attributes": True
     }
 
-class MedicoDetalhadoResponse(BaseModel):
-    codigo: UUID4
-    nome_completo: str
-    especialidade_id: int
+class MedicoPorLocalResponse(BaseModel):
+    total_medicos: int
     municipio_nome: Optional[str] = None
     estado_uf: Optional[str] = None
 
