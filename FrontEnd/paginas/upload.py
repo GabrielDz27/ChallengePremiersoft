@@ -56,10 +56,10 @@ def show():
             elif formato == "XML":
                 df = parse_xml(arquivo)
             elif formato == "HL7":
-                st.warning("⚠️ Parser HL7 ainda não implementado")
+                st.warning(" Parser HL7 ainda não implementado")
                 return
             elif formato == "FHIR":
-                st.warning("⚠️ Parser FHIR ainda não implementado")
+                st.warning(" Parser FHIR ainda não implementado")
                 return
 
             # Preview do arquivo
@@ -71,7 +71,7 @@ def show():
                 dados = df.to_dict(orient="records")
                 response = requests.post(f"{BACKEND_URL}/{tipo_endpoint}", json=dados)
                 response.raise_for_status()
-                st.success(f"✅ Arquivo enviado com sucesso! Status: {response.status_code}")
+                st.success(f" Arquivo enviado com sucesso! Status: {response.status_code}")
 
         except Exception as e:
             st.error(f"Erro ao processar o arquivo: {e}")
