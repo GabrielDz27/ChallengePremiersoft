@@ -49,7 +49,7 @@ def show():
     # Métricas Gerais
     # ---------------------------
     if aba_selecionada == "Métricas Gerais":
-        st.header("📊 Métricas Gerais")
+        st.header(" Métricas Gerais")
 
         def extrair_count(valor):
             if isinstance(valor, dict):
@@ -64,11 +64,11 @@ def show():
         col4, col5, col6 = st.columns(3)
 
         # Buscar dados da API
-        pacientes = requests.get(f"{BACKEND_URL}/{endpoints['Pacientes']}?count_only=true").json()
-        hospitais = requests.get(f"{BACKEND_URL}/{endpoints['Hospitais']}?count_only=true").json()
-        medicos = requests.get(f"{BACKEND_URL}/{endpoints['Médicos']}?count_only=true").json()
-        especialidades = requests.get(f"{BACKEND_URL}/{endpoints['Especialidades']}?count_only=true").json()
-        municipios = requests.get(f"{BACKEND_URL}/{endpoints['Municípios']}?count_only=true").json()
+        pacientes = requests.get(f"{BACKEND_URL}/{endpoints['Pacientes']}/contagem").json()
+        hospitais = requests.get(f"{BACKEND_URL}/{endpoints['Hospitais']}/contagem").json()
+        medicos = requests.get(f"{BACKEND_URL}/{endpoints['Médicos']}/contagem").json()
+        especialidades = requests.get(f"{BACKEND_URL}/{endpoints['Especialidades']}/contagem").json()
+        municipios = requests.get(f"{BACKEND_URL}/{endpoints['Municípios']}/contagem").json()
 
         # Linha 1
         col1.metric("Total de Pacientes", extrair_count(pacientes))
