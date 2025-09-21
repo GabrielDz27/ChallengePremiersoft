@@ -31,7 +31,7 @@ def criar_paciente(paciente: PacienteCreate, db: Session = Depends(get_db)):
 @router.get("/contagem", response_model=ContagemResponse)
 def contar_pacientes(db: Session = Depends(get_db)):
     total = db.query(Paciente).count()
-    return ContagemResponse(total_pacientes=total)
+    return ContagemResponse(total_medicos=total)
 
 # Endpoint para contar doenças agrupadas por CID-10
 @router.get("/doencas", response_model=List[DoencaContagemResponse])
