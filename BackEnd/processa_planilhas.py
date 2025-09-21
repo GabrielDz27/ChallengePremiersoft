@@ -6,6 +6,8 @@ from sqlalchemy.orm import sessionmaker
 from models import Cid10, Base, Especialidade, Estado, Hospital, Municipio, Medico, Paciente 
 import xml.etree.ElementTree as ET
 import os
+from sqlalchemy.dialects.mysql import insert as mysql_insert
+
 
 
 def check_file_type(file_path, skiprows=0, header=0, names=None):
@@ -27,39 +29,51 @@ engine = create_engine(DATABASE_CONNECTION_STRING)
 Session = sessionmaker(bind=engine)
 session = Session()
 
-def read_cid10_file(file_path):
-   # Ler XLSX pulando as 2 primeiras linhas (header na linha 3)
+def read_cid10_file(file_path, session):
+    # Ler o arquivo Excel, pulando as 2 primeiras linhas (header na linha 3)
     df = pd.read_excel(file_path, skiprows=2, header=None, names=['raw'])
 
     categoria_atual = None
     cid10_list = []
+    seen_codes = set()  # Usado para armazenar códigos já processados, evitando duplicados
 
     for raw_text in df['raw']:
         if pd.isna(raw_text):
-            continue  # pula linhas vazias
+            continue  # Pula linhas vazias
         
         raw_text = str(raw_text).strip()
         
-        # Linha de categoria
+        # Linha de categoria (exemplo: "Categoria: Cardiologia")
         if ':' in raw_text:
-            # pega o texto depois dos dois pontos e define a categoria atual
+            # Define a categoria atual com o texto após os dois pontos
             categoria_atual = raw_text.split(':', 1)[1].strip()
-            # print(f"Categoria atual: {categoria_atual}")
         else:
-            # linha que deve ser código - descrição
+            # Linha que deve ser código - descrição (exemplo: "A00 - Cólera")
             if ' - ' in raw_text:
                 codigo, descricao = raw_text.split(' - ', 1)
                 codigo = codigo.strip()
                 descricao = descricao.strip()
-                # Aqui você pode salvar o objeto incluindo a categoria, ou só salvar categoria no DB se quiser
-                cid10_list.append(Cid10(codigo=codigo, descricao=descricao, categoria=categoria_atual))
+                
+                # Verifica se o código CID10 já foi adicionado
+                if codigo in seen_codes:
+                    continue  # Ignora se o código já foi processado
+                seen_codes.add(codigo)  # Marca o código como processado
 
+                # Verifica se o código CID10 já existe no banco
+                cid10_existente = session.query(Cid10).filter_by(codigo=codigo).first()
+                if cid10_existente:
+                    continue  # Se o código já existe no banco, pula a inserção
 
+                # Cria o objeto Cid10
+                cid10 = Cid10(codigo=codigo, descricao=descricao, categoria=categoria_atual)
+                cid10_list.append(cid10)
 
-    # Inserir no banco (sem categoria, se não tiver coluna)
-    session.bulk_save_objects(cid10_list)
-    session.commit()
-    print(f"{len(cid10_list)} registros inseridos com sucesso!")
+    # Salvar os CID10 no banco de dados de forma eficiente (evita duplicação)
+    if cid10_list:
+        session.bulk_save_objects(cid10_list)
+        session.commit()
+
+    print(f"{len(cid10_list)} CID10s inseridos com sucesso.")
 
 def read_estados(file_path):
     df = pd.read_csv(file_path)
@@ -192,6 +206,7 @@ def read_medicos(file_path):
 BATCH_SIZE = 500
 
 def processa_paciente(paciente_elem, session):
+    # Processa o paciente a partir do XML
     codigo = paciente_elem.findtext("Codigo")
     cpf = paciente_elem.findtext("CPF")
     nome = paciente_elem.findtext("Nome_Completo")
@@ -199,13 +214,7 @@ def processa_paciente(paciente_elem, session):
     cod_municipio = paciente_elem.findtext("Cod_municipio")
     bairro = paciente_elem.findtext("Bairro")
     convenio = paciente_elem.findtext("Convenio")
-    cid10_codigo = paciente_elem.findtext("CID-10")
-
-    # Buscar Municipio
-    municipio = session.query(Municipio).filter_by(codigo_ibge=cod_municipio).first()
-    if not municipio:
-        print(f"Município {cod_municipio} não encontrado para paciente {nome}. Pulando...")
-        return None
+    cid10_codigo = paciente_elem.findtext("CID-10").split(" ")[-1]
 
     # Buscar CID10
     cid10 = session.query(Cid10).filter_by(codigo=cid10_codigo).first()
@@ -224,10 +233,10 @@ def processa_paciente(paciente_elem, session):
         cpf=cpf,
         nome_completo=nome,
         genero=genero,
-        municipio_id=municipio.codigo_ibge,
+        municipio_id=cod_municipio,
         bairro=bairro,
         convenio=convenio,
-        cid10_id=cid10.id
+        cid10_id=cid10.codigo
     )
     return paciente
 
@@ -244,22 +253,48 @@ def processa_pacientes_arquivo(file_path, session):
                 pacientes_batch.append(paciente)
 
             if len(pacientes_batch) >= BATCH_SIZE:
-                session.bulk_save_objects(pacientes_batch)
-                session.commit()
+                # Insere pacientes em batch ignorando duplicatas
+                insert_pacientes_ignore_duplicates(pacientes_batch, session)
                 pacientes_batch.clear()
 
     # Inserir os pacientes que restaram
     if pacientes_batch:
-        session.bulk_save_objects(pacientes_batch)
-        session.commit()
+        insert_pacientes_ignore_duplicates(pacientes_batch, session)
+
+
+def insert_pacientes_ignore_duplicates(pacientes_batch, session):
+    # Coleta os dados para inserção em batch
+    values = [
+        {
+            'codigo': p.codigo,
+            'cpf': p.cpf,
+            'nome_completo': p.nome_completo,
+            'genero': p.genero,
+            'municipio_id': p.municipio_id,
+            'bairro': p.bairro,
+            'convenio': p.convenio,
+            'cid10_id': p.cid10_id
+        }
+        for p in pacientes_batch
+    ]
+
+    if not values:
+        return
+
+    # Cria a query com INSERT IGNORE
+    stmt = mysql_insert(Paciente).values(values).prefix_with("IGNORE")
+    
+    # Executa a query
+    session.execute(stmt)
+    session.commit()
 
 
 if __name__ == "__main__":
-    # read_cid10_file('sheet/tabela CID-10.xlsx')
+    # read_cid10_file('sheet/tabela CID-10.xlsx', session)
     # read_estados('sheet/estados.csv')
     # read_municipios('sheet/municipios.csv')
     # read_especialidades('sheet/hospitais.csv')
     # read_hospitais('sheet/hospitais.csv')
     # read_medicos('sheet/medicos.csv')
-    processa_pacientes_arquivo('Sheet/pacientes.xml', session)
+    processa_pacientes_arquivo('sheet/pacientes.xml', session)
     session.close()

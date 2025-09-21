@@ -56,7 +56,6 @@ class Municipio(Base):
     populacao = Column(Integer)
 
     estado = relationship("Estado", back_populates="municipios")
-    pacientes = relationship("Paciente", back_populates="municipio")
     hospitais = relationship("Hospital", back_populates="municipio")
     medicos = relationship("Medico", back_populates="municipio")
 
@@ -102,8 +101,7 @@ class Medico(Base):
 class Cid10(Base):
     __tablename__ = 'cid10'
 
-    id = Column(Integer, primary_key=True, index=True)
-    codigo = Column(String(10), nullable=False)
+    codigo = Column(String(10), primary_key=True, index=True)
     categoria = Column(String(255), nullable=False)
     descricao = Column(String(255), nullable=False)
 
@@ -117,11 +115,10 @@ class Paciente(Base):
     cpf = Column(String(11), nullable=False, unique=True, index=True)
     nome_completo = Column(String(100), nullable=False)
     genero = Column(String(1))
-    municipio_id = Column(Integer, ForeignKey('municipios.codigo_ibge'))
+    municipio_id = Column(Integer)
     bairro = Column(String(100))
     convenio = Column(String(3))
-    cid10_id = Column(Integer, ForeignKey('cid10.id'))
+    cid10_id = Column(String(10), ForeignKey('cid10.codigo'))
 
-    municipio = relationship("Municipio", back_populates="pacientes")
     cid10 = relationship("Cid10", back_populates="pacientes")
     hospitais = relationship("Hospital", secondary=pacientes_hospitais, back_populates="pacientes")
