@@ -299,6 +299,6 @@ if __name__ == "__main__":
     # read_hospitais('sheet/hospitais.csv')
     # read_medicos('sheet/medicos.csv')
 
-    processa_pacientes_arquivo('sheet/pacientes.xml', session)
+    # processa_pacientes_arquivo('sheet/pacientes.xml', session)
 
     session.close()
