@@ -26,14 +26,18 @@ def show():
     abas = [
         "Métricas Gerais",
         "Médicos por local",
-        "Pacientes por Doença",
-        "Pacientes por Hospital"
+        "Pacientes por Doença"
     ]
+    aba_padrao = "Métricas Gerais"
+    aba_selecionada_atual = st.session_state.get("aba_selecionada", aba_padrao)
+
+    # Garante que sempre vai achar um índice válido
+    index_atual = next((i for i, a in enumerate(abas) if a == aba_selecionada_atual), 0)
 
     aba_selecionada = st.sidebar.selectbox(
         "Selecione a aba:",
         abas,
-        index=abas.index(st.session_state.aba_selecionada)
+        index=index_atual
     )
     st.subheader("Dashboard")
 
