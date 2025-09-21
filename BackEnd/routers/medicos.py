@@ -9,7 +9,7 @@ from schemas.contagem import ContagemResponse  # Importando o modelo de resposta
 from database import get_db
 from models import Medico, Municipio, Estado, Especialidade  
 from schemas import medico as medico_schemas
-from schemas.medico import MedicoResponse, MedicoPorLocalResponse, MedicoPorEspecialidadeResponse
+from schemas.medico import MedicoResponse, MedicoPorLocalResponse, MedicoPorEspecialidadeResponse, MedicoPorEspecialidadePorRegiaoResponse
 
 router = APIRouter(prefix="/medicos", tags=["Médicos"])
 
@@ -99,6 +99,40 @@ def listar_medicos_por_especialidade(
     return [
         MedicoPorEspecialidadeResponse(
             especialidade_nome=row.especialidade_nome,
+            total_medicos=row.total_medicos
+        )
+        for row in resultados
+    ]
+
+@router.get("/especialidade/regiao", response_model=List[MedicoPorEspecialidadePorRegiaoResponse])
+def listar_medicos_por_especialidade_por_regiao(
+    db: Session = Depends(get_db),
+    limit: Optional[int] = None
+):
+    # Query ajustada para contar médicos por especialidade e região 
+    stmt = (
+        db.query(
+            Especialidade.nome.label("especialidade_nome"),
+            Estado.uf.label("estado_uf"),
+            func.count(Medico.codigo).label("total_medicos")  # Contagem de médicos
+        )
+        .join(Especialidade, Medico.especialidade_id == Especialidade.id, isouter=True)  # LEFT JOIN
+        .join(Estado, Municipio.codigo_uf == Estado.codigo_uf, isouter=True)
+        .group_by(Especialidade.nome, Estado.uf)  # Agrupando por especialidade e estado
+    )
+
+    # Aplicando o limite, se necessário
+    if limit:
+        stmt = stmt.limit(limit)
+
+    # Executando a consulta e coletando os resultados
+    resultados = stmt.all()
+
+    # Montando a resposta
+    return [
+        MedicoPorEspecialidadePorRegiaoResponse(
+            especialidade_nome=row.especialidade_nome,
+            estado_uf=row.estado_uf,
             total_medicos=row.total_medicos
         )
         for row in resultados

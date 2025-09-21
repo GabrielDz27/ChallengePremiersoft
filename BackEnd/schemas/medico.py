@@ -35,3 +35,13 @@ class MedicoPorEspecialidadeResponse(BaseModel):
     class Config:
         # Tornar os campos compatíveis com o formato de resposta JSON
         orm_mode = True
+
+
+class MedicoPorEspecialidadePorRegiaoResponse(BaseModel):
+    estado_uf: str  # Unidade Federativa (UF) do estado
+    especialidade_nome: str  # Nome da especialidade
+    total_medicos: int  # Total de médicos na especialidade
+
+    class Config:
+        # Tornar os campos compatíveis com o formato de resposta JSON
+        orm_mode = True
